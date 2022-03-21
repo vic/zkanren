@@ -4,17 +4,22 @@ import zio.*
 import zio.stm.*
 import zio.stream.*
 
+// http://webyrd.net/scheme-2013/papers/HemannMuKanren2013.pdf
+// https://mullr.github.io/micrologic/literate.html
+// https://kwannoel.github.io/uKanren/index.html#/extensions
 object zuKanren {
 
   type Term[+X] = Var[X] | Value[X]
 
   type Value[+X] = X
 
+  type Bindings[T] = TMap[Var[T], Term[T]]
+
   trait Var[+X]
   object Var {
     def unapply[X](t: Term[X]): Option[Var[X]] = t match {
-      case v: Var[X] => Some(v)
-      case _         => None
+      case v: Var[X @unchecked] => Some(v)
+      case _                    => None
     }
   }
 
@@ -35,7 +40,7 @@ object zuKanren {
     }
 
     def fail[X]: Unify[X] = Unify[X] { (a, b) => ZSTM.fail(a -> b) }
-    def same[X]: Unify[X] = ???
+    def same[X]: Unify[X] = SMap.unifySame[X]
     def bind[X]: Unify[X] = ???
     def reduce[X](u: => Unify[X]): Unify[X] = ???
 
@@ -59,7 +64,7 @@ object zuKanren {
         case x => STM.succeed(x)
       }
 
-    def isSame[X]: Unify[X] = { (a: Term[X], b: Term[X]) =>
+    def unifySame[X]: Unify[X] = { (a: Term[X], b: Term[X]) =>
       ZSTM.serviceWithSTM[SMap] { smap =>
         val bindings = smap.bindings.asInstanceOf[Bindings[X]]
         (walk(bindings, a) zip walk(bindings, b)).flatMap {
@@ -69,9 +74,14 @@ object zuKanren {
       }
     }
 
-  }
+//    def unifyBind[X]: Unify[X] = { (a: Term[X], b: Term[X]) =>
+//      ZSTM.serviceWithSTM[SMap] { smap =>
+//        val bindings = smap.bindings.asInstanceOf[Bindings[X]]
+//
+//      }
+//    }
 
-  type Bindings[T] = TMap[Var[T], Term[T]]
+  }
 
   case class SMap(
       unify: Unify[Any],
