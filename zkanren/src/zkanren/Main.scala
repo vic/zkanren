@@ -4,6 +4,7 @@ import zio.*
 import zio.stm.*
 import zio.stream.*
 
+/*
 object Foo extends scala.App {
 
   trait LTerm {}
@@ -120,3 +121,4 @@ object Foo extends scala.App {
   )
 
 }
+**/
