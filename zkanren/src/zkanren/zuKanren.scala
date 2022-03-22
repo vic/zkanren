@@ -33,17 +33,27 @@ object zuKanren {
 
     override def toString: String = s"$$${n}:${tag.tag.repr}"
 
-    def next[Y: Tag]: Var[Y] = new Var[Y] {
-      import scala.compiletime.ops.int.+
-      override type N = 1 + self.N
-      override val n: Int = 1 + self.n
+    object next extends Var.Fn {
+      def apply[Y: Tag]: Var[Y] = new Var[Y] {
+        import scala.compiletime.ops.int.S
+        override type N = S[self.N]
+        override val n: Int = 1 + self.n
+      }
     }
+
   }
 
   object Var {
-    def zero[X: Tag]: Var[X] = new Var[X] {
-      override type N = 0
-      override val n: Int = 0
+
+    sealed trait Fn {
+      def apply[X: Tag]: Var[X]
+    }
+
+    object zero extends Fn {
+      override def apply[X: Tag]: Var[X] = new Var[X] {
+        override type N = 0
+        override val n: Int = 0
+      }
     }
 
     def unapply[X](t: Term[X]): Option[Var[X]] = t match {
@@ -114,7 +124,7 @@ object zuKanren {
 
   case class SMap(
       unify: Unify[Any],
-      nextVar: TRef[Var[Any]],
+      nextVar: TRef[Var.Fn],
       bindings: Bindings[Any]
   )
 
