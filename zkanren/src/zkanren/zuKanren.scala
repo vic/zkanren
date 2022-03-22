@@ -4,6 +4,13 @@ import zio.*
 import zio.stm.*
 import zio.stream.*
 
+import scala.compiletime.ops.int
+
+// Need a fast: occurs? term.dependsOn(var)?
+// Terms are streams
+//
+// Unifying a two streams of terms, if one ends before the other, dont unify.
+
 // http://webyrd.net/scheme-2013/papers/HemannMuKanren2013.pdf
 // https://mullr.github.io/micrologic/literate.html
 // https://kwannoel.github.io/uKanren/index.html#/extensions
@@ -11,15 +18,46 @@ object zuKanren {
 
   type Term[+X] = Var[X] | Value[X]
 
-  type Value[+X] = X
+  opaque type Value[+X] = UStream[X]
+  object Value {}
 
-  // TODO: Use TRef[LongMap[T]]
+  // TODO: Use TRef[LongMap[Term[T]]
   type Bindings[T] = TMap[Var[T], Term[T]]
 
-  sealed trait Var[+X]
+  sealed trait Var[+X: Tag] {
+    type T
+    type N <: Int
+    val n: N
+    private def tagRepr = implicitly[Tag[X]].tag.repr
+    override def toString: String = s"$$${n}:${tagRepr}"
+  }
+
   object Var {
 
-//    val x = ZIO.scoped {}
+    def apply[X]: PartialNext[X] = new PartialNext[X]
+    class PartialNext[X](private val dummy: Unit = ()) extends AnyVal {
+      def apply[M <: Int](
+          v: Var[Any]
+      )(implicit ev: Tag[X], m: M =:= int.S[v.N]): Var[X] =
+        new Var[X] {
+          override type T = X
+          override type N = M
+          override val n: N = m.asInstanceOf[N]
+        }
+    }
+
+    private type AUX[X, M] = Var[X] { type T = X; type M = N }
+
+    def n(v: Var[Any])(implicit ev: v.N): String = ev.toString
+    def tag(v: Var[Any])(implicit ev: Tag[v.T]): Tag[v.T] = ev
+
+//    def toString(v: Var[Any]): String = s"Var[${n(v)}:${tag(v)}]"
+
+    def zero[X: Tag]: Var[X] = new Var[X] {
+      override type T = X
+      override type N = 0
+      override val n: N = 0
+    }
 
     def unapply[X](t: Term[X]): Option[Var[X]] = t match {
       case v: Var[X @unchecked] => Some(v)

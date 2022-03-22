@@ -5,9 +5,11 @@ import zio.stm.*
 import zio.stream.*
 
 object Foo {
+  import zuKanren.*
 
   def main(args: Array[String]): Unit = {
-    println(s"JA")
+    println(s"JA ${Var.zero[Int]}")
+    println(s"JA ${Var.zero[Int]}")
   }
 
 }
