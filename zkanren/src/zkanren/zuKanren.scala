@@ -27,10 +27,8 @@ object zuKanren {
   sealed trait Var[+X] {
     type T
     type N <: Int
-
+    val n: N
     val tTag: Tag[T]
-    val nTag: Tag[N]
-    def n: Int = nTag.tag.shortName.toInt
     override def toString: String = s"$$${n}:${tTag.tag.repr}"
   }
 
@@ -46,9 +44,8 @@ object zuKanren {
         new Var[X] {
           override type T = X
           override type N = M
-          override val tTag = summon[Tag[T]]
-          override val nTag = summon[Tag[N]]
-//          override val n: N = m.asInstanceOf[N]
+          override val tTag: Tag[T] = ev
+          override val n: N = m.asInstanceOf[N]
         }
     }
 
@@ -62,9 +59,8 @@ object zuKanren {
     def zero[X: Tag]: Var[X] = new Var[X] {
       override type T = X
       override type N = 0
-      override val tTag = summon[Tag[T]]
-      override val nTag = summon[Tag[N]]
-      //      override val n: N = 0
+      override val n = 0
+      override val tTag: Tag[T] = summon
     }
 
     def unapply[X](t: Term[X]): Option[Var[X]] = t match {
