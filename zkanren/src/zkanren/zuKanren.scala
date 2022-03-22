@@ -5,6 +5,7 @@ import zio.stm.*
 import zio.stream.*
 
 import scala.compiletime.ops.int
+import scala.compiletime.constValue
 
 // Need a fast: occurs? term.dependsOn(var)?
 // Terms are streams
@@ -24,43 +25,25 @@ object zuKanren {
   // TODO: Use TRef[LongMap[Term[T]]
   type Bindings[T] = TMap[Var[T], Term[T]]
 
-  sealed trait Var[+X] {
-    type T <: X
+  sealed trait Var[+X: Tag] { self =>
     type N <: Int
-    val n: N
-    val tTag: Tag[T]
-    override def toString: String = s"$$${n}:${tTag.tag.repr}"
+    val n: Int
+
+    def tag: Tag[_] = summon[Tag[X]]
+
+    override def toString: String = s"$$${n}:${tag.tag.repr}"
+
+    def next[Y: Tag]: Var[Y] = new Var[Y] {
+      import scala.compiletime.ops.int.+
+      override type N = 1 + self.N
+      override val n: Int = 1 + self.n
+    }
   }
 
   object Var {
-
-    lazy val x: izumi.reflect.Tag[Int] = ???
-
-    def apply[X]: PartialNext[X] = new PartialNext[X]
-    class PartialNext[X](private val dummy: Unit = ()) extends AnyVal {
-      def apply[M <: Int](
-          v: Var[Any]
-      )(implicit ev: Tag[X], m: M =:= int.S[v.N], ev0: Tag[M]): Var[X] =
-        new Var[X] {
-          override type T = X
-          override type N = M
-          override val tTag: Tag[T] = ev
-          override val n: N = m.asInstanceOf[N]
-        }
-    }
-
-    private type AUX[X, M] = Var[X] { type T = X; type M = N }
-
-    def n(v: Var[Any])(implicit ev: v.N): String = ev.toString
-    def tag(v: Var[Any])(implicit ev: Tag[v.T]): Tag[v.T] = ev
-
-//    def toString(v: Var[Any]): String = s"Var[${n(v)}:${tag(v)}]"
-
     def zero[X: Tag]: Var[X] = new Var[X] {
-      override type T = X
       override type N = 0
-      override val n = 0
-      override val tTag: Tag[T] = summon
+      override val n: Int = 0
     }
 
     def unapply[X](t: Term[X]): Option[Var[X]] = t match {

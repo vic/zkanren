@@ -8,8 +8,10 @@ object Foo {
   import zuKanren.*
 
   def main(args: Array[String]): Unit = {
-    println(s"JA ${Var.zero[Int]}")
-    println(s"JA ${Var.zero[Int]}")
+    val a = Var.zero[Int]
+    val b = a.next[String]
+    println(s"JA ${a}")
+    println(s"JA ${b}")
   }
 
 }
