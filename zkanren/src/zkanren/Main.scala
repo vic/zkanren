@@ -4,6 +4,14 @@ import zio.*
 import zio.stm.*
 import zio.stream.*
 
+object Foo {
+
+  def main(args: Array[String]): Unit = {
+    println(s"JA")
+  }
+
+}
+
 /*
 object Foo extends scala.App {
 

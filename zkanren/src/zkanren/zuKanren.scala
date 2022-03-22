@@ -13,10 +13,14 @@ object zuKanren {
 
   type Value[+X] = X
 
+  // TODO: Use TRef[LongMap[T]]
   type Bindings[T] = TMap[Var[T], Term[T]]
 
-  trait Var[+X]
+  sealed trait Var[+X]
   object Var {
+
+//    val x = ZIO.scoped {}
+
     def unapply[X](t: Term[X]): Option[Var[X]] = t match {
       case v: Var[X @unchecked] => Some(v)
       case _                    => None

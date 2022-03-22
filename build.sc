@@ -52,7 +52,7 @@ class ZKanren(val crossScalaVersion: String)
   override def pomSettings: T[PomSettings] = meta.pomSettings
 
   override def ivyDeps: T[Loose.Agg[Dep]] = super.ivyDeps() ++ Seq(
-    ivy"dev.zio::zio:2.0.0-RC2",
-    ivy"dev.zio::zio-streams:2.0.0-RC2"
+    ivy"dev.zio::zio:2.0.0-RC3",
+    ivy"dev.zio::zio-streams:2.0.0-RC3"
   )
 }
