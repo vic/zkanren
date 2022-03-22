@@ -30,7 +30,8 @@ object zuKanren {
 
     val tTag: Tag[T]
     val nTag: Tag[N]
-    override def toString: String = s"$$${nTag.tag.shortName}:${tTag.tag.repr}"
+    def n: Int = nTag.tag.shortName.toInt
+    override def toString: String = s"$$${n}:${tTag.tag.repr}"
   }
 
   object Var {
