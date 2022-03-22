@@ -25,7 +25,7 @@ object zuKanren {
   type Bindings[T] = TMap[Var[T], Term[T]]
 
   sealed trait Var[+X] {
-    type T
+    type T <: X
     type N <: Int
     val n: N
     val tTag: Tag[T]
