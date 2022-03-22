@@ -29,7 +29,8 @@ object zuKanren {
     type N <: Int
     val n: N
     private def tagRepr = implicitly[Tag[X]].tag.repr
-    override def toString: String = s"$$${n}:${tagRepr}"
+    private def xagRepr = implicitly[Tag[(T, N)]].tag.repr
+    override def toString: String = s"$$${n}:${xagRepr}"
   }
 
   object Var {
