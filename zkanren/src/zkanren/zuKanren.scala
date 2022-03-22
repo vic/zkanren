@@ -24,26 +24,30 @@ object zuKanren {
   // TODO: Use TRef[LongMap[Term[T]]
   type Bindings[T] = TMap[Var[T], Term[T]]
 
-  sealed trait Var[+X: Tag] {
+  sealed trait Var[+X] {
     type T
     type N <: Int
-    val n: N
-    private def tagRepr = implicitly[Tag[X]].tag.repr
-    private def xagRepr = implicitly[Tag[(T, N)]].tag.repr
-    override def toString: String = s"$$${n}:${xagRepr}"
+
+    val tTag: Tag[T]
+    val nTag: Tag[N]
+    override def toString: String = s"$$${nTag.tag.shortName}:${tTag.tag.repr}"
   }
 
   object Var {
+
+    lazy val x: izumi.reflect.Tag[Int] = ???
 
     def apply[X]: PartialNext[X] = new PartialNext[X]
     class PartialNext[X](private val dummy: Unit = ()) extends AnyVal {
       def apply[M <: Int](
           v: Var[Any]
-      )(implicit ev: Tag[X], m: M =:= int.S[v.N]): Var[X] =
+      )(implicit ev: Tag[X], m: M =:= int.S[v.N], ev0: Tag[M]): Var[X] =
         new Var[X] {
           override type T = X
           override type N = M
-          override val n: N = m.asInstanceOf[N]
+          override val tTag = summon[Tag[T]]
+          override val nTag = summon[Tag[N]]
+//          override val n: N = m.asInstanceOf[N]
         }
     }
 
@@ -57,7 +61,9 @@ object zuKanren {
     def zero[X: Tag]: Var[X] = new Var[X] {
       override type T = X
       override type N = 0
-      override val n: N = 0
+      override val tTag = summon[Tag[T]]
+      override val nTag = summon[Tag[N]]
+      //      override val n: N = 0
     }
 
     def unapply[X](t: Term[X]): Option[Var[X]] = t match {
