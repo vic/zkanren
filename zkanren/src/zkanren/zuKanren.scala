@@ -4,6 +4,7 @@ import zio.*
 import zio.stm.*
 import zio.stream.*
 
+import scala.collection.immutable.LongMap
 import scala.compiletime.ops.int
 import scala.compiletime.constValue
 
@@ -22,8 +23,7 @@ object zuKanren {
   opaque type Value[+X] = UStream[X]
   object Value {}
 
-  // TODO: Use TRef[LongMap[Term[T]]
-  type Bindings[T] = TMap[Var[T], Term[T]]
+  type Bindings[T] = TRef[LongMap[Term[T]]]
 
   sealed trait Var[+X: Tag] { self =>
     type N <: Int
@@ -33,10 +33,10 @@ object zuKanren {
 
     override def toString: String = s"$$${n}:${tag.tag.repr}"
 
-    object next extends Var.Fn {
+    object next extends Var.Next {
       def apply[Y: Tag]: Var[Y] = new Var[Y] {
-        import scala.compiletime.ops.int.S
-        override type N = S[self.N]
+        import scala.compiletime.ops.int.+
+        override type N = 1 + self.N
         override val n: Int = 1 + self.n
       }
     }
@@ -45,11 +45,11 @@ object zuKanren {
 
   object Var {
 
-    sealed trait Fn {
+    sealed trait Next {
       def apply[X: Tag]: Var[X]
     }
 
-    object zero extends Fn {
+    object zero extends Next {
       override def apply[X: Tag]: Var[X] = new Var[X] {
         override type N = 0
         override val n: Int = 0
@@ -90,12 +90,12 @@ object zuKanren {
   object SMap {
 
     private def walk[X](
-        b: TMap[Var[X], Term[X]],
+        b: Bindings[X],
         t: Term[X]
     ): USTM[Term[X]] =
       t match {
         case Var(v) =>
-          b.get(v).flatMap {
+          b.get.map(_.get(v.n)).flatMap {
             case None         => STM.succeed(v)
             case Some(Var(v)) => walk(b, v)
             case Some(term)   => STM.succeed(term)
@@ -124,7 +124,7 @@ object zuKanren {
 
   case class SMap(
       unify: Unify[Any],
-      nextVar: TRef[Var.Fn],
+      nextVar: TRef[Var.Next],
       bindings: Bindings[Any]
   )
 
